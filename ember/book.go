@@ -93,8 +93,8 @@ func (es *BookCache) Format(bookId int) string {
 	for _, v := range sa {
 		sb.WriteString(v)
 	}
-	fmt.Println(sb.String())
-	return sb.String()
+	fmt.Println(replaceCp(sb.String()))
+	return replaceCp(sb.String())
 }
 
 func format(i int, e Book) string {
@@ -126,4 +126,40 @@ func BuildBookCache(es []Book) *BookCache {
 	result.BookNames = books
 	result.BookIds = bookIds
 	return &result
+}
+
+// 替换一部分中文标点, 这个纯粹是个人习惯. 部分中文标点会被替换成英文标点.
+func replaceCp(str string) string {
+
+	cp := make(map[rune]rune)
+	cp['，'] = ','
+	cp['。'] = '.'
+	cp['“'] = '"'
+	cp['”'] = '"'
+	cp['’'] = '\''
+	cp['‘'] = '\''
+	cp['《'] = '<'
+	cp['》'] = '>'
+	cp['（'] = '('
+	cp['）'] = ')'
+	cp['　'] = ' '
+	cp['-'] = '-'
+	cp['；'] = ';'
+	cp['：'] = ':'
+	cp['？'] = '?'
+	cp['！'] = '!'
+	cp['、'] = ','
+	defaultMap := func(r rune) rune {
+		if v, e := cp[r]; e {
+			return v
+		}
+		return r
+	}
+	rs := []rune(str)
+
+	for i, v := range rs {
+		rs[i] = defaultMap(v)
+	}
+
+	return string(rs)
 }
