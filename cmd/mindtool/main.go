@@ -13,7 +13,7 @@ var handler = make(map[string]func(string, string, int) (string, error))
 func init() {
 	handler["2mm"] = md2mm
 	handler["2md"] = mm2md
-	handler["sp"] = special
+	handler["sp2mm"] = special
 }
 
 func main() {
