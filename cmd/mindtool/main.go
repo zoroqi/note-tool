@@ -19,7 +19,7 @@ func init() {
 func main() {
 	f := flag.String("f", "", "change file path")
 	o := flag.String("o", "", "output file")
-	m := flag.String("m", "", "2mm/2md/sp(special input file)")
+	m := flag.String("m", "", "2mm/2md/sp2mm(special input file)")
 	b := flag.Int("b", 1, "2mm balance")
 	indent := flag.String("i", "    ", "md indent")
 	flag.Parse()
