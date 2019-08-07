@@ -4,3 +4,4 @@ go.sum
 
 cmd/ember/ember
 cmd/mindtool/mindtool
+cmd/safelive/safelive
