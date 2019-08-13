@@ -2,7 +2,6 @@ package mind
 
 import (
 	"github.com/beevik/etree"
-	"strconv"
 	"strings"
 )
 
@@ -51,8 +50,7 @@ func balance(tree *MdTree, element *etree.Element, balance int) {
 			if s == "" {
 				continue
 			}
-			id, _ := strconv.Atoi(s)
-			count[s] = tree.idMapper[id].descendantCountByLevel(balance)
+			count[s] = tree.idMapper[s].descendantCountByLevel(balance)
 			total += count[s]
 		}
 		b := total >> 1
@@ -82,9 +80,9 @@ func md2mm(tree *MdTree, node *MdNode, doc *etree.Element) {
 		return
 	}
 	n := doc.CreateElement(NODE)
-	n.CreateAttr(CREATED, strconv.Itoa(node.id))
-	n.CreateAttr(ID, ID_+strconv.Itoa(node.id))
-	n.CreateAttr(MODIFIED, strconv.Itoa(node.id))
+	n.CreateAttr(CREATED, node.id)
+	n.CreateAttr(ID, ID_+node.id)
+	n.CreateAttr(MODIFIED, node.id)
 	n.CreateAttr(TEXT, node.subject)
 	if node.link != "" {
 		n.CreateAttr(LINK, node.link)
