@@ -53,6 +53,7 @@ func (m *MdNode) descendantCountByLevel(level int) int {
 
 type MdTree struct {
 	Root          *MdNode
+	Topic         string
 	idMapper      map[string]*MdNode
 	subjectMapper map[string][]*MdNode
 }
@@ -107,16 +108,16 @@ func ParseMd(markdown string, indent string) (tree *MdTree, err error) {
 
 	md := strings.ReplaceAll(markdown, "\r", "")
 	lines := strings.Split(md, "\n")
-	subject := ""
+	topic := ""
 	for _, v := range lines {
 		if strings.TrimSpace(v) != "" {
-			subject = v
+			topic = strings.TrimSpace(v)[2:]
 			break
 		}
 	}
 
-	tree = &MdTree{idMapper: make(map[string]*MdNode), subjectMapper: make(map[string][]*MdNode)}
-	root := newMdNode(subject, "\\0", -1)
+	tree = &MdTree{Topic: topic, idMapper: make(map[string]*MdNode), subjectMapper: make(map[string][]*MdNode)}
+	root := newMdNode(topic, "\\0", -1)
 	tree.AddNode(root)
 	tree.Root = root
 
