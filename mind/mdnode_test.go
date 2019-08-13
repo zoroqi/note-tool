@@ -33,9 +33,9 @@ func TestParseMd(t *testing.T) {
 	tree, err := ParseMd(str, "    ")
 	fmt.Println(err)
 	tree.Print()
-	node6 := tree.subjectMapper["标6"]
-	node7 := tree.subjectMapper["标7"]
-	node8 := tree.subjectMapper["标8"]
+	node6 := tree.subjectMapper["标6"][0]
+	node7 := tree.subjectMapper["标7"][0]
+	node8 := tree.subjectMapper["标8"][0]
 	if node6 != node7.parent {
 		t.Error("parent error")
 	}
@@ -48,8 +48,8 @@ func TestParseMd(t *testing.T) {
 	if node7.children[0] != node8 {
 		t.Error("child error")
 	}
-	node3 := tree.subjectMapper["标3"]
-	node32 := tree.subjectMapper["标3.2"]
+	node3 := tree.subjectMapper["标3"][0]
+	node32 := tree.subjectMapper["标3.2"][0]
 	if node3.children[1] != node32 {
 		t.Error("child error")
 	}
@@ -57,5 +57,6 @@ func TestParseMd(t *testing.T) {
 	if node3 != node32.parent {
 		t.Error("parent error")
 	}
+	fmt.Println(tree.idMapper)
 
 }

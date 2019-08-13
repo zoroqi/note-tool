@@ -3,11 +3,12 @@ package mind
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
 type MdNode struct {
-	id              int       // 序列id
+	id              string    // 序列id
 	subject         string    // 主题
 	children        []*MdNode // 孩子
 	richContent     string    // 其他描述
@@ -42,7 +43,7 @@ func (m *MdNode) descendantCountByLevel(level int) int {
 		n := q[0]
 		if n.depth <= maxDepth {
 			q = append(q, n.children...)
-			c ++
+			c++
 		}
 		q = q[1:]
 	}
@@ -52,8 +53,8 @@ func (m *MdNode) descendantCountByLevel(level int) int {
 
 type MdTree struct {
 	Root          *MdNode
-	idMapper      map[int]*MdNode
-	subjectMapper map[string]*MdNode
+	idMapper      map[string]*MdNode
+	subjectMapper map[string][]*MdNode
 }
 
 func (t *MdTree) Print() {
@@ -66,7 +67,10 @@ func (t *MdTree) Print() {
 }
 func (t *MdTree) AddNode(node *MdNode) {
 	t.idMapper[node.id] = node
-	t.subjectMapper[node.subject] = node
+	if t.subjectMapper[node.subject] == nil {
+		t.subjectMapper[node.subject] = make([]*MdNode, 0, 1)
+	}
+	t.subjectMapper[node.subject] = append(t.subjectMapper[node.subject], node)
 }
 
 func DF(root *MdNode, prefix, indent string) {
@@ -76,7 +80,7 @@ func DF(root *MdNode, prefix, indent string) {
 	s := prefix + indent
 	r := root.richContent
 	if root.link != "" {
-		fmt.Printf("%s* [%s](%s)\n", prefix, root.subject, root.link )
+		fmt.Printf("%s* [%s](%s)\n", prefix, root.subject, root.link)
 	} else {
 		fmt.Printf("%s* %s %s\n", prefix, root.subject, root.link)
 	}
@@ -100,14 +104,21 @@ func ParseMd(markdown string, indent string) (tree *MdTree, err error) {
 		}
 	}()
 	err = nil
-	tree = &MdTree{idMapper: make(map[int]*MdNode), subjectMapper: make(map[string]*MdNode)}
-	root := newMdNode(-1, "\\0", -1)
-	tree.idMapper[root.id] = root
-	tree.subjectMapper[root.subject] = root
-	tree.Root = root
 
 	md := strings.ReplaceAll(markdown, "\r", "")
 	lines := strings.Split(md, "\n")
+	subject := ""
+	for _, v := range lines {
+		if strings.TrimSpace(v) != "" {
+			subject = v
+			break
+		}
+	}
+
+	tree = &MdTree{idMapper: make(map[string]*MdNode), subjectMapper: make(map[string][]*MdNode)}
+	root := newMdNode(subject, "\\0", -1)
+	tree.AddNode(root)
+	tree.Root = root
 
 	stackOffset := 0
 	parentStack := make([]*MdNode, 30, 40)
@@ -125,8 +136,7 @@ outer:
 		if isSubject(subject) {
 			nodeId++
 			subject = subject[2:]
-			node = newMdNode(nodeId, subject, d)
-			tree.AddNode(node)
+			node = newMdNode(strconv.Itoa(nodeId), subject, d)
 			pd := parentStack[stackOffset].depth
 			parent := parentStack[stackOffset]
 			if d <= pd {
@@ -148,7 +158,10 @@ outer:
 				stackOffset++
 				parentStack[stackOffset] = node
 			}
+			// 修改id的编码方式, 改为x.x.x这种方式
 			parent.AddChild(node)
+			node.id = parent.id + "." + strconv.Itoa(parent.childCount)
+			tree.AddNode(node)
 		} else {
 			parentStack[stackOffset].richContent += subject + "\n"
 		}
@@ -178,7 +191,7 @@ func trimIndent(str string, indent string) string {
 
 // 进行, 将subject转换成对应数据
 // 需要转换link内容
-func newMdNode(id int, subject string, depth int) *MdNode {
+func newMdNode(id string, subject string, depth int) *MdNode {
 	regex, _ := regexp.Compile("\\[(.*?)\\]\\((.*?)\\)")
 	s := regex.FindStringSubmatch(subject)
 	sub := subject
