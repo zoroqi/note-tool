@@ -4,10 +4,16 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/md5"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"strconv"
+	"time"
 )
+
+const md5_start_index = 5
+const pw_length = 32
 
 func EncryptLines(lines []string, key string) ([]string, error) {
 	f := fillFormat(key)
@@ -56,7 +62,7 @@ func PKCS7UnPadding(origData []byte) []byte {
 
 func fillFormat(key string) string {
 	kl := len(key)
-	f := "%s%0" + strconv.Itoa(16-kl) + "d"
+	f := "%s%0" + strconv.Itoa(pw_length-kl) + "d"
 	return f
 }
 
@@ -88,4 +94,19 @@ func decrypt(str, key string) (string, error) {
 	blockMode.CryptBlocks(origData, crypted)
 	origData = PKCS7UnPadding(origData)
 	return string(origData), nil
+}
+
+func EncryptPassword(pw string) (string, string, error) {
+	now := time.Now().UnixNano()
+	h := md5.New()
+	h.Write([]byte(strconv.FormatInt(now, 10)))
+	mm := hex.EncodeToString(h.Sum(nil))
+	begin := mm[md5_start_index : pw_length-6-len(pw)+md5_start_index]
+	npw := begin + pw
+	p, err := encrypt(npw, fmt.Sprintf(fillFormat(pw), pw, 1))
+	return npw, p, err
+}
+
+func DecryptPassword(pw string, line string) (string, error) {
+	return decrypt(line, fmt.Sprintf(fillFormat(pw), pw, 1))
 }

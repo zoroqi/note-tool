@@ -28,8 +28,8 @@ func main() {
 		return
 	}
 
-	if p == nil || *p == "" || len(*p) > 12 {
-		fmt.Print("mode is empty or len(p) > 12")
+	if p == nil || *p == "" || len(*p) > 16 {
+		fmt.Print("mode is empty or len(p) > 16")
 		return
 	}
 	bs, err := ioutil.ReadFile(*f)
@@ -43,9 +43,33 @@ func main() {
 	md := strings.ReplaceAll(str, "\r", "")
 	lines := strings.Split(md, "\n")
 	if *m == "en" {
-		lines, err = safe_live.EncryptLines(lines, *p)
+		password, headLine, err := safe_live.EncryptPassword(*p)
+		if err != nil {
+			if err != nil {
+				fmt.Println("encrypt pw error,", err)
+				return
+			}
+		}
+		lines, err = safe_live.EncryptLines(lines, password)
+		if err != nil {
+			fmt.Println("encrypt error,", err)
+			return
+		}
+		newLines := make([]string, 0, len(lines))
+		newLines = append(newLines, headLine)
+		newLines = append(newLines, lines...)
+		lines = newLines
 	} else if *m == "des" {
-		lines, err = safe_live.DecryptLines(lines, *p)
+		password, err := safe_live.DecryptPassword(*p, lines[0])
+		if err != nil {
+			fmt.Println("decrypt pw error,", err)
+			return
+		}
+		lines, err = safe_live.DecryptLines(lines[1:], password)
+		if err != nil {
+			fmt.Println("decrypt error,", err)
+			return
+		}
 	} else {
 		fmt.Println("mode error")
 		return
@@ -60,8 +84,8 @@ func main() {
 		sb.WriteString(v)
 		sb.WriteString("\n")
 	}
-
-	if err := ioutil.WriteFile(*o, []byte(sb.String()), 0666); err != nil {
+	all := sb.String()
+	if err := ioutil.WriteFile(*o, []byte(all[0:len(all)-1]), 0666); err != nil {
 		fmt.Print(err)
 	}
 }
