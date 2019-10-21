@@ -35,5 +35,17 @@ func TestEncryptLines(t *testing.T) {
 }
 
 func TestFillNum(t *testing.T) {
-	fmt.Printf("%04d",34124)
+	fmt.Printf("%04d", 34124)
+}
+
+func TestFillFormat(t *testing.T) {
+	str := "freedomdie"
+	fmt.Printf(fillFormat(str), str, 1)
+}
+
+func TestPassword(t *testing.T) {
+	str := "1234567890123456"
+	npw, _ := EncryptPassword(str)
+	fmt.Println(npw)
+	fmt.Println(DecryptPassword(str, npw))
 }
