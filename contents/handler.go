@@ -4,6 +4,9 @@ import "strings"
 
 var img = map[string]bool{"jpg": true, "img": true, "jpeg": true, "bmp": true, "gif": true}
 
+var especialType = map[string]bool{"zomd": true}
+
+
 var levelSpace []string
 
 const FOUR_SPACE = "    "
@@ -40,6 +43,14 @@ func PreSpace(level int) string {
 		return levelSpace[level]
 	}
 	return strings.Repeat(FOUR_SPACE, level)
+}
+
+func EspecialRemove(s string) bool {
+	fileType := FileType(s)
+	if fileType == "" {
+		return false
+	}
+	return especialType[fileType]
 }
 
 func FileType(s string) string {

@@ -13,7 +13,7 @@ func main() {
 	contentsRemove := contents.ContentsRemove(*name)
 
 	remove := func(s string) bool {
-		return contents.HiddenRemove(s) || contents.ImgRemove(s) || contentsRemove(s)
+		return contents.HiddenRemove(s) || contents.ImgRemove(s) || contents.EspecialRemove(s) || contentsRemove(s)
 	}
 
 	config := contents.Config{Name: *name,
