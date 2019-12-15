@@ -16,13 +16,13 @@ func init() {
 }
 
 func ImgRemove(s string) bool {
-	i := strings.LastIndex(s, ".")
-	if i < 0 {
+	fileType := FileType(s)
+	if fileType == "" {
 		return false
 	}
-	fileType := strings.ToLower(s[i+1:])
 	return img[fileType]
 }
+
 
 func HiddenRemove(s string) bool {
 	return strings.HasPrefix(s, ".")
@@ -40,4 +40,13 @@ func PreSpace(level int) string {
 		return levelSpace[level]
 	}
 	return strings.Repeat(FOUR_SPACE, level)
+}
+
+func FileType(s string) string {
+	i := strings.LastIndex(s, ".")
+	if i < 0 {
+		return ""
+	}
+	fileType := strings.ToLower(s[i+1:])
+	return fileType
 }
