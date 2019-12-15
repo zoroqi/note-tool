@@ -8,6 +8,7 @@ import (
 func main() {
 	name := flag.String("n", "contents.md", "contents name")
 	level := flag.Int("l", 3, "output file level")
+    flag.Parse()
 
 	contentsRemove := contents.ContentsRemove(*name)
 
