@@ -1,6 +1,7 @@
 .idea
 .DS_Store
 go.sum
+*.exe
 
 cmd/ember/ember
 cmd/mindtool/mindtool
