@@ -7,7 +7,7 @@ import (
 )
 
 func TestParseClippings(t *testing.T) {
-	filePath := "/Users/wuming/note/My Clippings.txt"
+	filePath := "/Users/wuming/cache/k.txt"
 	bs, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		fmt.Println(err)
@@ -22,7 +22,7 @@ func TestParseClippings(t *testing.T) {
 func TestParseClippingsBlock(t *testing.T) {
 	block := []string{
 		"黑客与画家 (保罗·格雷厄姆)",
-		"- 您在位置 #685的标注 | 添加于 2015年10月28日星期三 上午9:03:17",
+		"- 您在第 135 页（位置 #1925）的笔记 | 添加于 2020年1月13日星期一 下午9:38:05^M",
 		"",
 		"程序写出来是给人看的，附带能在机器上运行。",
 	}
