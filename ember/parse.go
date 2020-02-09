@@ -26,8 +26,8 @@ var typeRegex *regexp.Regexp
 
 func init() {
 	date, _ := regexp.Compile("添加于\\s(.*)")
-	offset, _ := regexp.Compile("您在位置 #(.*?)\\s?的")
-	ctype, _ := regexp.Compile("您在位置 .*的(.*?) ")
+	offset, _ := regexp.Compile("位置 #(.*?)([）]*?|\\s*?)的")
+	ctype, _ := regexp.Compile("位置 .*的(.*?) ")
 	dateFindRegex = date
 	offsetRegex = offset
 	typeRegex = ctype
