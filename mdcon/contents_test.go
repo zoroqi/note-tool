@@ -14,7 +14,7 @@ func TestBuildMdContents(t *testing.T)  {
 	if err != nil {
 		return
 	}
-	md := BuildMdContents(string(bs))
+	md := SetContents(string(bs))
 	fmt.Println(md)
 }
 
