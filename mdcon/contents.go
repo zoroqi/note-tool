@@ -2,6 +2,7 @@ package mdcon
 
 import (
 	"math"
+	"net/url"
 	"regexp"
 	"strings"
 )
@@ -10,6 +11,8 @@ type title struct {
 	level int
 	text  string
 }
+
+const contentRegex = "-----\r?\n(\\* 目录)\r?\n[\\s\\S]*?-----"
 
 var spaces = make([]string, 6)
 
@@ -37,21 +40,24 @@ func fourSpace(count int) string {
 	return spaces[count]
 }
 
-func BuildMdContents(text string) string {
+func SetContents(text string) string {
 	lines := strings.Split(text, "\n")
 	titles := findTitle(lines)
+	if len(titles) == 0 {
+		return text
+	}
 
 	contents := buildContents(titles)
 
 	if existContents(text) {
 		return replaceContents(text, contents)
 	} else {
-		return text
+		return mergeContents(lines, contents)
 	}
 }
 
 func existContents(text string) bool {
-	r, _ := regexp.Compile("-----\r?\n(\\* 目录)\r?\n[\\s\\S]*?-----")
+	r, _ := regexp.Compile(contentRegex)
 	if r.FindString(text) != "" {
 		return true
 	}
@@ -59,30 +65,65 @@ func existContents(text string) bool {
 }
 
 func replaceContents(text, contents string) string {
-	r, _ := regexp.Compile("-----\r?\n(\\* 目录)\r?\n[\\s\\S]*?-----")
+	r, _ := regexp.Compile(contentRegex)
 	return r.ReplaceAllString(text, contents)
+}
+
+func mergeContents(lines []string, contents string) string {
+	sb := strings.Builder{}
+	insert := true
+	blockFlag := false
+	for _, l := range lines {
+		if strings.HasPrefix(l, "`") {
+			if blockFlag {
+				blockFlag = false
+			} else {
+				blockFlag = true
+			}
+		}
+		if !blockFlag && insert {
+			sb.WriteString(l)
+			sb.WriteRune('\n')
+			if strings.HasPrefix(l, "# ") {
+				sb.WriteRune('\n')
+				sb.WriteString(contents)
+				sb.WriteRune('\n')
+				insert = false
+			}
+		} else {
+			sb.WriteString(l)
+			sb.WriteRune('\n')
+		}
+	}
+	if insert {
+		return "\n" + contents + "\n" + sb.String()
+	}
+	return sb.String()
 }
 
 func buildContents(titles []string) string {
 	sb := strings.Builder{}
-	next := title{level: math.MaxInt32}
+	pre := title{level: math.MaxInt32}
+	preSpaceCount := 1
 
 	for _, t := range titles {
 		title := parseTitle(t)
-		if title.level < next.level {
-			sb.WriteString(buildTitleLink(title))
-		} else if title.level == next.level {
-			sb.WriteString(buildTitleLink(title))
+		if title.level < pre.level {
+			preSpaceCount = preSpaceCount - 1
+			sb.WriteString(buildTitleLink(title, preSpaceCount))
+		} else if title.level == pre.level {
+			sb.WriteString(buildTitleLink(title, preSpaceCount))
 		} else {
-			sb.WriteString(buildTitleLink(title))
+			preSpaceCount = preSpaceCount + 1
+			sb.WriteString(buildTitleLink(title, preSpaceCount))
 		}
-		next = title
+		pre = title
 	}
 	return "-----\n* 目录\n" + sb.String() + "-----\n"
 }
 
-func buildTitleLink(t title) string {
-	return fourSpace(t.level-1) + "- [" + t.text + "](#" + t.text + ")\n"
+func buildTitleLink(t title, spaceCount int) string {
+	return fourSpace(spaceCount) + "- [" + t.text + "](#" + url.QueryEscape(t.text) + ")\n"
 }
 
 func parseTitle(t string) title {
@@ -96,17 +137,17 @@ func parseTitle(t string) title {
 func findTitle(lines []string) []string {
 	titles := make([]string, 0, len(lines)/20)
 
-	blackFlag := false
+	blockFlag := false
 
 	for _, l := range lines {
 		if strings.HasPrefix(l, "`") {
-			if blackFlag {
-				blackFlag = false
+			if blockFlag {
+				blockFlag = false
 			} else {
-				blackFlag = true
+				blockFlag = true
 			}
 		}
-		if blackFlag {
+		if blockFlag {
 			continue
 		}
 		if strings.HasPrefix(l, "#") {
