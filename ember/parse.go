@@ -9,6 +9,16 @@ import (
 	"time"
 )
 
+type ClippingType string
+type BookDesc string
+
+const ClippingMark ClippingType = "mark"
+const ClippingNote ClippingType = "note"
+const ClippingBookmark ClippingType = "bookmark"
+
+const BookMobiOrAzw BookDesc = "mobiOrAzw"
+const BookPdf BookDesc = "pdf"
+
 type clipping struct {
 	id           int
 	book         string
@@ -17,21 +27,16 @@ type clipping struct {
 	date         string
 	time         time.Time
 	text         string
-	clippingType string
+	clippingType ClippingType
 }
 
-var dateFindRegex *regexp.Regexp
-var offsetRegex *regexp.Regexp
-var typeRegex *regexp.Regexp
+var dateFindRegex = regexp.MustCompile("添加于\\s(.*)")
 
-func init() {
-	date, _ := regexp.Compile("添加于\\s(.*)")
-	offset, _ := regexp.Compile("位置 #(.*?)([）]*?|\\s*?)的")
-	ctype, _ := regexp.Compile("位置 .*的(.*?) ")
-	dateFindRegex = date
-	offsetRegex = offset
-	typeRegex = ctype
-}
+// - 您在第 126-126 页的标注 | 添加于 2022年3月28日星期一 上午8:35:18
+// - 您在第 57 页的笔记 | 添加于 2022年3月25日星期五 下午7:20:52
+// - 您在位置 #1680 的书签 | 添加于 2016年1月27日星期三 上午9:08:40
+// - 您在位置 #1103-1103的标注 | 添加于 2016年1月26日星期二 下午8:05:45
+// - 您在位置 #1385 的笔记 | 添加于 2015年12月16日星期三 下午7:55:38
 
 type parseIterator struct {
 	lines  []string
@@ -71,33 +76,26 @@ func parseClippingBlock(block []string) *clipping {
 		e.book = strings.TrimSpace(book)
 	}
 
+	// - 您在第 126-126 页的标注 | 添加于 2022年3月28日星期一 上午8:35:18
+	// - 您在第 57 页的笔记 | 添加于 2022年3月25日星期五 下午7:20:52
+	// - 您在位置 #1680 的书签 | 添加于 2016年1月27日星期三 上午9:08:40
+	// - 您在位置 #1103-1103的标注 | 添加于 2016年1月26日星期二 下午8:05:45
+	// - 您在位置 #1385 的笔记 | 添加于 2015年12月16日星期三 下午7:55:38
 	if l >= 2 {
 		t := block[1]
+		filedesc := bookDesc(t)
+		start, end, ct := filedesc.indexParse(t)
 		date := dateFindRegex.FindStringSubmatch(t)
 		if len(date) > 0 {
 			d := date[1]
 			e.date = d
 			e.time = parseTime(d)
 		}
-
-		offset := offsetRegex.FindStringSubmatch(t)
-		if len(offset) > 0 {
-			o := offset[1]
-			os := strings.SplitN(o, "-", 2)
-			start, _ := strconv.ParseInt(os[0], 10, 32)
-			end := start
-			if len(os) > 1 {
-				end, _ = strconv.ParseInt(os[1], 10, 32)
-			}
-			e.offsetStart = int(start)
-			e.offsetEnd = int(end)
-		}
-
-		ctype := typeRegex.FindStringSubmatch(t)
-		if len(ctype) > 0 {
-			e.clippingType = ctype[1]
-		}
+		e.offsetStart = int(start)
+		e.offsetEnd = int(end)
+		e.clippingType = ct
 	}
+
 	if l >= 4 {
 		e.text = block[3]
 	}
@@ -142,13 +140,13 @@ func ParseClippings(clippingsText string) []Book {
 
 	for i, c := range clippings {
 		switch c.clippingType {
-		case "标注":
+		case ClippingMark:
 			books = append(books, Book{Id: i, Name: c.book, Date: c.date, Time: c.time, Text: c.text, Note: ""})
 			if _, exist := offsetMapping[c.book]; !exist {
 				offsetMapping[c.book] = make(map[int]int)
 			}
 			offsetMapping[c.book][c.offsetEnd] = i
-		case "笔记":
+		case ClippingNote:
 			notes = append(notes, c)
 		}
 	}
@@ -170,4 +168,83 @@ func ParseClippings(clippingsText string) []Book {
 	}
 
 	return books
+}
+
+// - 您在第 57 页的笔记 | 添加于 2022年3月25日星期五 下午7:20:52 -> pdf
+// - 您在位置 #1680 的书签 | 添加于 2016年1月27日星期三 上午9:08:40 -> mobi
+func bookDesc(s string) BookDesc {
+	s = strings.ReplaceAll(s, " ", "")
+	s = strings.ReplaceAll(s, "-", "")
+	if strings.HasPrefix(s, "您在第") {
+		return BookPdf
+	}
+	return BookMobiOrAzw
+}
+
+func (c BookDesc) indexParse(s string) (start, end int64, t ClippingType) {
+	switch c {
+	case BookPdf:
+		return pdfIndexParse(s)
+	default:
+		return mobiIndexParse(s)
+	}
+}
+
+// - 您在位置 #1680 的书签 | 添加于 2016年1月27日星期三 上午9:08:40
+// - 您在位置 #1103-1103的标注 | 添加于 2016年1月26日星期二 下午8:05:45
+var mobiOffsetRegex = regexp.MustCompile("位置 #(.*?)([）]*?|\\s*?)的")
+var mobiTypeRegex = regexp.MustCompile("位置 .*的(.*?) ")
+
+func mobiIndexParse(s string) (start, end int64, t ClippingType) {
+	offset := mobiOffsetRegex.FindStringSubmatch(s)
+	if len(offset) > 0 {
+		start, end = offsetHandler(offset)
+	}
+	t = ClippingMark
+	ctype := mobiTypeRegex.FindStringSubmatch(s)
+	if len(ctype) > 0 {
+		if ctype[1] == "标注" {
+			t = ClippingMark
+		} else if ctype[1] == "笔记" {
+			t = ClippingNote
+		} else {
+			t = ClippingBookmark
+		}
+	}
+	return
+}
+
+func offsetHandler(offset []string) (start, end int64) {
+	o := offset[1]
+	os := strings.SplitN(o, "-", 2)
+	start, _ = strconv.ParseInt(os[0], 10, 32)
+	end = start
+	if len(os) > 1 {
+		end, _ = strconv.ParseInt(os[1], 10, 32)
+	}
+	return start, end
+}
+
+// - 您在第 57 页的笔记 | 添加于 2022年3月25日星期五 下午7:20:52
+// - 您在第 126-126 页的标注 | 添加于 2022年3月28日星期一 上午8:35:18
+var pdfOffsetRegex = regexp.MustCompile("第 (.*?)([）]*?|\\s*?)页的")
+var pdfTypeRegex = regexp.MustCompile("第 .*页的(.*?) ")
+
+func pdfIndexParse(s string) (start, end int64, t ClippingType) {
+	offset := pdfOffsetRegex.FindStringSubmatch(s)
+	if len(offset) > 0 {
+		start, end = offsetHandler(offset)
+	}
+	t = ClippingMark
+	ctype := pdfTypeRegex.FindStringSubmatch(s)
+	if len(ctype) > 0 {
+		if ctype[1] == "标注" {
+			t = ClippingMark
+		} else if ctype[1] == "笔记" {
+			t = ClippingNote
+		} else {
+			t = ClippingBookmark
+		}
+	}
+	return
 }
