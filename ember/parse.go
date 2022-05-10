@@ -12,12 +12,18 @@ import (
 type ClippingType string
 type BookDesc string
 
+// 标记
 const ClippingMark ClippingType = "mark"
+
+// 笔记
 const ClippingNote ClippingType = "note"
+
+// 书签
 const ClippingBookmark ClippingType = "bookmark"
 
 const BookMobiOrAzw BookDesc = "mobiOrAzw"
 const BookPdf BookDesc = "pdf"
+const BookKfx BookDesc = "kfx"
 
 type clipping struct {
 	id           int
@@ -172,10 +178,14 @@ func ParseClippings(clippingsText string) []Book {
 
 // - 您在第 57 页的笔记 | 添加于 2022年3月25日星期五 下午7:20:52 -> pdf
 // - 您在位置 #1680 的书签 | 添加于 2016年1月27日星期三 上午9:08:40 -> mobi
+// - 您在第 91 页（位置 #1347）的笔记 | 添加于 2022年5月10日星期二 上午10:15:36 -> kfx
 func bookDesc(s string) BookDesc {
 	s = strings.ReplaceAll(s, " ", "")
 	s = strings.ReplaceAll(s, "-", "")
 	if strings.HasPrefix(s, "您在第") {
+		if strings.Contains(s, "位置") {
+			return BookKfx
+		}
 		return BookPdf
 	}
 	return BookMobiOrAzw
@@ -185,6 +195,8 @@ func (c BookDesc) indexParse(s string) (start, end int64, t ClippingType) {
 	switch c {
 	case BookPdf:
 		return pdfIndexParse(s)
+	case BookKfx:
+		return kfxIndexParse(s)
 	default:
 		return mobiIndexParse(s)
 	}
@@ -237,6 +249,30 @@ func pdfIndexParse(s string) (start, end int64, t ClippingType) {
 	}
 	t = ClippingMark
 	ctype := pdfTypeRegex.FindStringSubmatch(s)
+	if len(ctype) > 0 {
+		if ctype[1] == "标注" {
+			t = ClippingMark
+		} else if ctype[1] == "笔记" {
+			t = ClippingNote
+		} else {
+			t = ClippingBookmark
+		}
+	}
+	return
+}
+
+//- 您在第 91 页（位置 #1347）的笔记 | 添加于 2022年5月10日星期二 上午10:15:36
+//- 您在第 94 页（位置 #1391-1392）的标注 | 添加于 2022年5月10日星期二 上午10:25:41
+var kfxOffsetRegex = regexp.MustCompile("位置 #(.*?)([）]*?|\\s*?)的")
+var kfxTypeRegex = regexp.MustCompile("位置 .*的(.*?) ")
+
+func kfxIndexParse(s string) (start, end int64, t ClippingType) {
+	offset := kfxOffsetRegex.FindStringSubmatch(s)
+	if len(offset) > 0 {
+		start, end = offsetHandler(offset)
+	}
+	t = ClippingMark
+	ctype := kfxTypeRegex.FindStringSubmatch(s)
 	if len(ctype) > 0 {
 		if ctype[1] == "标注" {
 			t = ClippingMark

@@ -32,14 +32,20 @@ func TestParseClippingsBlock(t *testing.T) {
 
 }
 
-func TestBookCache_Format(t *testing.T) {
-	filePath := "/Users/wuming/note/My Clippings.txt"
-	bs, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		fmt.Println(err)
-		return
+func TestParseKfxBlock(t *testing.T) {
+	block := []string{
+		"弱者的武器：农民反抗的日常形式 (人文与社会译丛) ([美国]詹姆斯•C•斯科特)",
+		"- 您在第 91 页（位置 #1347）的笔记 | 添加于 2022年5月10日星期二 上午10:15:36",
+		"",
+		"我们以1966年作为比较的起点，穆达地区绝大多数的农民家庭确实比以前富裕了很多，但与此同时，收入分配差距也越来越大，而且，相当多的农民——可能要占总人口的35%—40%—已经被远远地抛在了后面，他们的收入和10年前差不多。",
 	}
-	book := ParseClippings(string(bs))
-	bc := BuildBookCache(book)
-	bc.Format(25)
+
+	e := parseClippingBlock(block)
+	fmt.Println(e.id)
+	fmt.Println(e.text)
+	fmt.Println(e.offsetEnd)
+	fmt.Println(e.offsetStart)
+	fmt.Println(e.date)
+	fmt.Println(e.clippingType)
+
 }
