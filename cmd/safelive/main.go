@@ -55,7 +55,7 @@ func main() {
 			fmt.Println("encrypt error,", err)
 			return
 		}
-		newLines := make([]string, 0, len(lines))
+		newLines := make([]string, 0, len(lines)+1)
 		newLines = append(newLines, headLine)
 		newLines = append(newLines, lines...)
 		lines = newLines
@@ -85,7 +85,7 @@ func main() {
 		sb.WriteString("\n")
 	}
 	all := sb.String()
-	if err := ioutil.WriteFile(*o, []byte(all[0:len(all)-1]), 0666); err != nil {
+	if err := ioutil.WriteFile(*o, []byte(all[0:len(all)-1]), 0644); err != nil {
 		fmt.Print(err)
 	}
 }

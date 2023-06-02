@@ -1,7 +1,6 @@
 package safe_live
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -9,8 +8,12 @@ func TestEncrypt(t *testing.T) {
 	str := "123"
 	key := "1234567890123456"
 	en, err := encrypt(str, key)
-	fmt.Println(en, err)
-	fmt.Println(decrypt(en, key))
+	if err != nil {
+		t.Error(err)
+	}
+	if en != "yGjLrkpCmzyuVSHt7ZUflw==" {
+		t.Errorf("en is %s", en)
+	}
 }
 
 func TestEncryptLines(t *testing.T) {
@@ -22,30 +25,34 @@ func TestEncryptLines(t *testing.T) {
 	}
 	key := "1234567890a"
 	lines, _ := EncryptLines(block, key)
-
-	for _, v := range lines {
-		fmt.Println(v)
+	lines2, _ := DecryptLines(lines, key)
+	for i, v := range lines2 {
+		if block[i] != v {
+			t.Errorf("%s%s", block[i], v)
+		}
 	}
-	fmt.Println()
-
-	lines2, _ := DecryptLines(block, key)
-	for _, v := range lines2 {
-		fmt.Println(v)
-	}
-}
-
-func TestFillNum(t *testing.T) {
-	fmt.Printf("%04d", 34124)
 }
 
 func TestFillFormat(t *testing.T) {
-	str := "freedomdie"
-	fmt.Printf(fillFormat(str), str, 1)
+	str := "abc"
+	format := fillFormat(str)
+	if format != "%s%029d" {
+		t.Errorf("format is %s", format)
+	}
 }
 
 func TestPassword(t *testing.T) {
-	str := "1234567890123456"
-	npw, _ := EncryptPassword(str)
-	fmt.Println(npw)
-	fmt.Println(DecryptPassword(str, npw))
+	pw := "1234567890123456"
+	npw, pws, err := EncryptPassword(pw)
+	if err != nil {
+		t.Error(err)
+	}
+	decPw, err := DecryptPassword(pw, pws)
+	if err != nil {
+		t.Error(err)
+	}
+	if decPw != npw {
+		t.Errorf("decPw is %s", decPw)
+	}
+
 }
