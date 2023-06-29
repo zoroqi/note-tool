@@ -43,7 +43,7 @@ func main() {
 	md := strings.ReplaceAll(str, "\r", "")
 	lines := strings.Split(md, "\n")
 	if *m == "en" {
-		password, headLine, err := safe_live.EncryptPassword(*p)
+		password, encryptedPw, err := safe_live.EncryptPassword(*p)
 		if err != nil {
 			if err != nil {
 				fmt.Println("encrypt pw error,", err)
@@ -56,7 +56,7 @@ func main() {
 			return
 		}
 		newLines := make([]string, 0, len(lines)+1)
-		newLines = append(newLines, headLine)
+		newLines = append(newLines, encryptedPw)
 		newLines = append(newLines, lines...)
 		lines = newLines
 	} else if *m == "des" {

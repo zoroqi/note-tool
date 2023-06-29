@@ -4,6 +4,15 @@ import (
 	"testing"
 )
 
+func Test_newkey(t *testing.T) {
+	str := "123"
+	key := "1234567890123456"
+	nkey := newkey(str, key)
+	if nkey != "OQ[9#(WU?:U6(+g4<e~dXXhec<;0*hZ8" {
+		t.Errorf("nkey is %s", nkey)
+	}
+}
+
 func TestEncrypt(t *testing.T) {
 	str := "123"
 	key := "1234567890123456"
@@ -33,26 +42,17 @@ func TestEncryptLines(t *testing.T) {
 	}
 }
 
-func TestFillFormat(t *testing.T) {
-	str := "abc"
-	format := fillFormat(str)
-	if format != "%s%029d" {
-		t.Errorf("format is %s", format)
-	}
-}
-
 func TestPassword(t *testing.T) {
 	pw := "1234567890123456"
-	npw, pws, err := EncryptPassword(pw)
+	nkey, enkey, err := EncryptPassword(pw)
 	if err != nil {
 		t.Error(err)
 	}
-	decPw, err := DecryptPassword(pw, pws)
+	decPw, err := DecryptPassword(pw, enkey)
 	if err != nil {
 		t.Error(err)
 	}
-	if decPw != npw {
+	if decPw != nkey {
 		t.Errorf("decPw is %s", decPw)
 	}
-
 }
